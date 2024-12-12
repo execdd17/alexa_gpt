@@ -27,7 +27,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "Welcome dude, you can say Hello or Help. Which would you like to try?"
+        speak_output = "Welcome dude, you can say Hello or Help. You can also say secret things that only Daddy knows."
 
         return (
             handler_input.response_builder
@@ -36,6 +36,23 @@ class LaunchRequestHandler(AbstractRequestHandler):
                 .response
         )
 
+
+class ZigZagIntentHandler(AbstractRequestHandler):
+    """Handler for Hello World Intent."""
+    def can_handle(self, handler_input):
+        # type: (HandlerInput) -> bool
+        return ask_utils.is_intent_name("ZigZagIntent")(handler_input)
+
+    def handle(self, handler_input):
+        # type: (HandlerInput) -> Response
+        speak_output = "Who is the dog that likes to play? Zig Zag, Zig Zag!"
+
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                .response
+        )
+    
 
 class HelloWorldIntentHandler(AbstractRequestHandler):
     """Handler for Hello World Intent."""
