@@ -12,6 +12,8 @@ from ask_sdk_core.skill_builder import SkillBuilder
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.handler_input import HandlerInput
+from ask_sdk_core.utils import is_intent_name
+
 
 from ask_sdk_model import Response
 
@@ -47,6 +49,30 @@ def get_secret_from_extension():
         return None
 
 
+class NameIntentHandler(AbstractRequestHandler):
+    def can_handle(self, handler_input):
+        # Check if this is a NameIntent request
+        return is_intent_name("NameIntent")(handler_input)
+        # return ask_utils.is_request_type("NameIntent")(handler_input)
+
+    def handle(self, handler_input):
+        # Get the user's name from the slot
+        user_name = handler_input.request_envelope.request.intent.slots["name"].value
+        
+        # Store the user's name in session attributes
+        session_attributes = handler_input.attributes_manager.session_attributes
+        session_attributes['userName'] = user_name
+        
+        speak_output = f"Nice to meet you, {user_name}! How can I help you today?"
+
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                .ask(speak_output)
+                .response
+        )
+
+
 class LaunchRequestHandler(AbstractRequestHandler):
     """Handler for Skill Launch."""
     def can_handle(self, handler_input):
@@ -56,7 +82,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "Welcome dude, you can say Hello or Help. You can also say secret things that only Daddy knows."
+        speak_output = "What is your name?" 
 
         return (
             handler_input.response_builder
@@ -64,7 +90,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
                 .ask(speak_output)
                 .response
         )
-
+    
 
 class ZigZagIntentHandler(AbstractRequestHandler):
     def can_handle(self, handler_input):
@@ -204,6 +230,7 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
 sb = SkillBuilder()
 
 sb.add_request_handler(LaunchRequestHandler())
+sb.add_request_handler(NameIntentHandler())
 sb.add_request_handler(HelloWorldIntentHandler())
 sb.add_request_handler(ZigZagIntentHandler())
 sb.add_request_handler(HelpIntentHandler())
