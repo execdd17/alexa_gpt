@@ -6,6 +6,13 @@
 # This sample is built using the handler classes approach in skill builder.
 import logging
 import ask_sdk_core.utils as ask_utils
+import wikipediaapi
+import os
+import urllib.request
+import json
+
+import boto3
+from botocore.exceptions import ClientError
 
 from ask_sdk_core.skill_builder import SkillBuilder
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
@@ -16,6 +23,58 @@ from ask_sdk_model import Response
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+def get_secret_from_extension():
+    secret_name = "prod/openai/tokens"
+    endpoint = f"http://localhost:2773/secretsmanager/get?secretId={secret_name}"
+
+    # Get the AWS session token from environment variables
+    session_token = os.getenv('AWS_SESSION_TOKEN')
+
+    if not session_token:
+        raise Exception("AWS_SESSION_TOKEN not found in environment variables")
+
+    # Set the necessary headers, including the session token
+    headers = {
+        "X-Aws-Parameters-Secrets-Token": session_token
+    }
+
+    try:
+        req = urllib.request.Request(endpoint, headers=headers)
+        with urllib.request.urlopen(req) as response:
+            if response.status == 200:
+                secret = json.loads(response.read().decode())
+                return secret['SecretString']
+            else:
+                raise Exception(f"Failed to retrieve secret. Status: {response.status}")
+    except Exception as e:
+        print(f"Error retrieving secret: {e}")
+        return None
+
+
+def get_secret():
+
+    secret_name = "prod/openai/tokens"
+    region_name = "us-east-1"
+
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        # For a list of exceptions thrown, see
+        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+        raise e
+
+    return get_secret_value_response['SecretString']
 
 
 class LaunchRequestHandler(AbstractRequestHandler):
@@ -38,7 +97,6 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
 
 class ZigZagIntentHandler(AbstractRequestHandler):
-    """Handler for Hello World Intent."""
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
         return ask_utils.is_intent_name("ZigZagIntent")(handler_input)
@@ -53,6 +111,7 @@ class ZigZagIntentHandler(AbstractRequestHandler):
                 .response
         )
     
+
 
 class HelloWorldIntentHandler(AbstractRequestHandler):
     """Handler for Hello World Intent."""
@@ -185,3 +244,41 @@ sb.add_request_handler(IntentReflectorHandler()) # make sure IntentReflectorHand
 sb.add_exception_handler(CatchAllExceptionHandler())
 
 lambda_handler = sb.lambda_handler()
+
+
+# def lambda_handler(event, context):
+#     # secret = get_secret()
+#     secret = get_secret_from_extension()
+#     return json.dumps({"secret": secret})
+
+# def lambda_handler(event, context):
+#     secret_name = "prod/openai/tokens-LTn7P9"
+#     endpoint = f"http://localhost:2773/secretsmanager/get?secretId={secret_name}"
+#     headers = {"X-Aws-Parameters-Secrets-Token": os.environ.get("AWS_SESSION_TOKEN", "N/A")}
+
+#     # Logging the environment variable to ensure it's set
+#     print(f"Session Token: {headers['X-Aws-Parameters-Secrets-Token']}")
+
+#     req = urllib.request.Request(endpoint, headers=headers)
+    
+#     try:
+#         with urllib.request.urlopen(req) as response:
+#             if response.status == 200:
+#                 secret = json.loads(response.read().decode())
+#                 print(f"Secret retrieved: {secret['SecretString']}")
+#                 return {
+#                     "statusCode": 200,
+#                     "body": f"Secret retrieved: {secret['SecretString']}"
+#                 }
+#             else:
+#                 print(f"Failed to retrieve secret. Status: {response.status}")
+#                 return {
+#                     "statusCode": response.status,
+#                     "body": f"Failed to retrieve secret. Status: {response.status}"
+#                 }
+#     except urllib.error.URLError as e:
+#         print(f"Error retrieving secret: {e.reason}")
+#         return {
+#             "statusCode": 500,
+#             "body": f"Error retrieving secret: {e.reason}"
+#         }
