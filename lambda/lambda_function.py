@@ -1,18 +1,12 @@
-# -*- coding: utf-8 -*-
-
 # This sample demonstrates handling intents from an Alexa skill using the Alexa Skills Kit SDK for Python.
 # Please visit https://alexa.design/cookbook for additional examples on implementing slots, dialog management,
 # session persistence, api calls, and more.
 # This sample is built using the handler classes approach in skill builder.
 import logging
-import ask_sdk_core.utils as ask_utils
-import wikipediaapi
 import os
 import urllib.request
 import json
-
-import boto3
-from botocore.exceptions import ClientError
+import ask_sdk_core.utils as ask_utils
 
 from ask_sdk_core.skill_builder import SkillBuilder
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
@@ -51,30 +45,6 @@ def get_secret_from_extension():
     except Exception as e:
         print(f"Error retrieving secret: {e}")
         return None
-
-
-def get_secret():
-
-    secret_name = "prod/openai/tokens"
-    region_name = "us-east-1"
-
-    # Create a Secrets Manager client
-    session = boto3.session.Session()
-    client = session.client(
-        service_name='secretsmanager',
-        region_name=region_name
-    )
-
-    try:
-        get_secret_value_response = client.get_secret_value(
-            SecretId=secret_name
-        )
-    except ClientError as e:
-        # For a list of exceptions thrown, see
-        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
-        raise e
-
-    return get_secret_value_response['SecretString']
 
 
 class LaunchRequestHandler(AbstractRequestHandler):
@@ -158,7 +128,7 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "Goodbye!"
+        speak_output = "Goodbye, dude!"
 
         return (
             handler_input.response_builder
