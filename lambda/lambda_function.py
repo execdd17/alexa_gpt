@@ -62,13 +62,46 @@ class NameIntentHandler(AbstractRequestHandler):
         # Store the user's name in session attributes
         session_attributes = handler_input.attributes_manager.session_attributes
         session_attributes['userName'] = user_name
-        
-        speak_output = f"Nice to meet you, {user_name}! How can I help you today?"
 
+        logger.debug(f"Inside NameIntentHandler with userName: {user_name} from the session")
+        
+        speak_output = f"Hello, {user_name}. What do you want to know?"
         return (
             handler_input.response_builder
                 .speak(speak_output)
                 .ask(speak_output)
+                .response
+        )
+
+
+class QueryIntentHandler(AbstractRequestHandler):
+    def can_handle(self, handler_input):
+        return is_intent_name("QueryIntent")(handler_input)
+    
+    def handle_user_query(self, user_query):
+        # Example query handler (replace with actual logic)
+        return f"The result for '{user_query}' is 42."
+
+    def handle(self, handler_input):
+        user_query = handler_input.request_envelope.request.intent.slots["query"].value
+
+        session_attributes = handler_input.attributes_manager.session_attributes
+        user_name = session_attributes.get("userName")
+
+        logger.debug(f"user_query is {user_query}")
+        logger.debug(f"user_name is {user_name}")
+
+        if not user_name:
+          raise Exception("I do not know the user name!")
+        
+        if not user_query:
+          raise Exception("I do not know the user query!")
+
+        # Proceed with the query logic
+        speak_output = f"Here's the answer to your question, {user_name}: {self.handle_user_query(user_query)}"
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
                 .response
         )
 
@@ -109,22 +142,22 @@ class ZigZagIntentHandler(AbstractRequestHandler):
     
 
 
-class HelloWorldIntentHandler(AbstractRequestHandler):
-    """Handler for Hello World Intent."""
-    def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
-        return ask_utils.is_intent_name("HelloWorldIntent")(handler_input)
+# class HelloWorldIntentHandler(AbstractRequestHandler):
+#     """Handler for Hello World Intent."""
+#     def can_handle(self, handler_input):
+#         # type: (HandlerInput) -> bool
+#         return ask_utils.is_intent_name("HelloWorldIntent")(handler_input)
 
-    def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
-        speak_output = "Hello, dude!"
+#     def handle(self, handler_input):
+#         # type: (HandlerInput) -> Response
+#         speak_output = "Hello, dude!"
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                # .ask("add a reprompt if you want to keep the session open for the user to respond")
-                .response
-        )
+#         return (
+#             handler_input.response_builder
+#                 .speak(speak_output)
+#                 # .ask("add a reprompt if you want to keep the session open for the user to respond")
+#                 .response
+#         )
 
 
 class HelpIntentHandler(AbstractRequestHandler):
@@ -231,7 +264,8 @@ sb = SkillBuilder()
 
 sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(NameIntentHandler())
-sb.add_request_handler(HelloWorldIntentHandler())
+sb.add_request_handler(QueryIntentHandler())
+# sb.add_request_handler(HelloWorldIntentHandler())
 sb.add_request_handler(ZigZagIntentHandler())
 sb.add_request_handler(HelpIntentHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
