@@ -1,53 +1,168 @@
 {
   "interactionModel": {
-    "languageModel": {
-      "intents": [
-        {
-          "name": "AMAZON.CancelIntent",
-          "samples": []
-        },
-        {
-          "name": "AMAZON.HelpIntent",
-          "samples": []
-        },
-        {
-          "name": "AMAZON.StopIntent",
-          "samples": []
-        },
-        {
-          "name": "AMAZON.YesIntent",
-          "samples": []
-        },
-        {
-          "name": "AMAZON.FallbackIntent",
-          "samples": []
-        },
-        {
-          "name": "AMAZON.NoIntent",
-          "samples": []
-        },
-        {
-          "slots": [
-            {
-              "name": "number",
-              "type": "AMAZON.NUMBER"
-            }
+      "languageModel": {
+          "invocationName": "zig zag",
+          "intents": [
+              {
+                  "name": "AMAZON.CancelIntent",
+                  "samples": []
+              },
+              {
+                  "name": "AMAZON.HelpIntent",
+                  "samples": []
+              },
+              {
+                  "name": "AMAZON.StopIntent",
+                  "samples": []
+              },
+              {
+                  "name": "AMAZON.FallbackIntent",
+                  "samples": []
+              },
+              {
+                  "name": "AMAZON.NavigateHomeIntent",
+                  "samples": []
+              },
+              {
+                  "name": "ZigZagIntent",
+                  "slots": [],
+                  "samples": [
+                      "zig zag",
+                      "zigzag"
+                  ]
+              },
+              {
+                  "name": "NameIntent",
+                  "slots": [
+                      {
+                          "name": "name",
+                          "type": "FamilyNames",
+                          "samples": [
+                              "Layla",
+                              "Natalie",
+                              "cadence"
+                          ]
+                      }
+                  ],
+                  "samples": [
+                      "{name}",
+                      "I am {name}",
+                      "My name is {name}"
+                  ]
+              },
+              {
+                  "name": "QueryIntent",
+                  "slots": [
+                      {
+                          "name": "query",
+                          "type": "AMAZON.SearchQuery",
+                          "samples": [
+                              "Why does it rain",
+                              "Where is Moscow",
+                              "How do I draw a simple house",
+                              "Tell me about motorcycles",
+                              "Tell me about Dachshunds",
+                              "What is twentyfive times seven",
+                              "What is the capital of France"
+                          ]
+                      }
+                  ],
+                  "samples": [
+                      "found out {query}",
+                      "search for {query}"
+                  ]
+              }
           ],
-          "name": "NumberGuessIntent",
-          "samples": [
-            "{number}",
-            "is it {number}",
-            "how about {number}",
-            "could be {number}"
+          "types": [
+              {
+                  "name": "FamilyNames",
+                  "values": [
+                      {
+                          "name": {
+                              "value": "daddy"
+                          }
+                      },
+                      {
+                          "name": {
+                              "value": "mommy"
+                          }
+                      },
+                      {
+                          "name": {
+                              "value": "cadence"
+                          }
+                      },
+                      {
+                          "name": {
+                              "value": "natalie"
+                          }
+                      },
+                      {
+                          "name": {
+                              "value": "layla"
+                          }
+                      }
+                  ]
+              }
           ]
-        },
-        {
-          "name": "AMAZON.NavigateHomeIntent",
-          "samples": []
-        }
-      ],
-      "types": [],
-      "invocationName": "zig zag"
-    }
+      },
+      "dialog": {
+          "intents": [
+              {
+                  "name": "NameIntent",
+                  "delegationStrategy": "ALWAYS",
+                  "confirmationRequired": false,
+                  "prompts": {},
+                  "slots": [
+                      {
+                          "name": "name",
+                          "type": "FamilyNames",
+                          "confirmationRequired": false,
+                          "elicitationRequired": true,
+                          "prompts": {
+                              "elicitation": "Elicit.Slot.349005624568.911395169618"
+                          }
+                      }
+                  ]
+              },
+              {
+                  "name": "QueryIntent",
+                  "confirmationRequired": false,
+                  "prompts": {},
+                  "slots": [
+                      {
+                          "name": "query",
+                          "type": "AMAZON.SearchQuery",
+                          "confirmationRequired": false,
+                          "elicitationRequired": true,
+                          "prompts": {
+                              "elicitation": "Elicit.Slot.31417954686.280619096652"
+                          }
+                      }
+                  ]
+              }
+          ],
+          "delegationStrategy": "ALWAYS"
+      },
+      "prompts": [
+          {
+              "id": "Elicit.Slot.349005624568.911395169618",
+              "variations": [
+                  {
+                      "type": "PlainText",
+                      "value": "What is your name?"
+                  }
+              ]
+          },
+          {
+              "id": "Elicit.Slot.31417954686.280619096652",
+              "variations": [
+                  {
+                      "type": "PlainText",
+                      "value": "What do you want to know "
+                  }
+              ]
+          }
+      ]
   }
 }

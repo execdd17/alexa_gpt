@@ -7,46 +7,18 @@ import os
 import urllib.request
 import json
 import ask_sdk_core.utils as ask_utils
+from openai import OpenAI
+
 
 from ask_sdk_core.skill_builder import SkillBuilder
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.handler_input import HandlerInput
 from ask_sdk_core.utils import is_intent_name
-
-
 from ask_sdk_model import Response
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
-def get_secret_from_extension():
-    secret_name = "prod/openai/tokens"
-    endpoint = f"http://localhost:2773/secretsmanager/get?secretId={secret_name}"
-
-    # Get the AWS session token from environment variables
-    session_token = os.getenv('AWS_SESSION_TOKEN')
-
-    if not session_token:
-        raise Exception("AWS_SESSION_TOKEN not found in environment variables")
-
-    # Set the necessary headers, including the session token
-    headers = {
-        "X-Aws-Parameters-Secrets-Token": session_token
-    }
-
-    try:
-        req = urllib.request.Request(endpoint, headers=headers)
-        with urllib.request.urlopen(req) as response:
-            if response.status == 200:
-                secret = json.loads(response.read().decode())
-                return secret['SecretString']
-            else:
-                raise Exception(f"Failed to retrieve secret. Status: {response.status}")
-    except Exception as e:
-        print(f"Error retrieving secret: {e}")
-        return None
 
 
 class NameIntentHandler(AbstractRequestHandler):
@@ -78,9 +50,92 @@ class QueryIntentHandler(AbstractRequestHandler):
     def can_handle(self, handler_input):
         return is_intent_name("QueryIntent")(handler_input)
     
-    def handle_user_query(self, user_query):
-        # Example query handler (replace with actual logic)
-        return f"The result for '{user_query}' is 42."
+    def handle_user_query(self, user, user_query):
+        secret = QueryIntentHandler.get_secret_from_extension()
+        api_key = json.loads(secret)['api-key']
+        logger.info(f"api_key length: {len(api_key)}")
+        
+        client = OpenAI(api_key=api_key)
+
+        if user.lower() == 'cadence' or user.lower() == 'natalie' :
+            system_prompt = "You are a friendly assistant who explains things in a simple, fun, and easy-to-understand way. Use clear language and short sentences, and focus on keeping the conversation engaging. Avoid using difficult words and make sure your explanations are interesting by adding examples or fun comparisons. Imagine explaining things to someone who loves to learn but still needs things broken down clearly and simply."
+        elif user.lower() == 'layla':
+            system_prompt = "You are an assistant who explains things in a fun and informative way for a curious 10-12-year-old. Use language that’s a little more advanced than for younger children, but still make sure the information is easy to follow. Provide some more details and examples to help them understand complex ideas, and try to make the explanations interesting and relatable by connecting them to things they might already know, like hobbies, games, or school subjects."
+        else:
+            system_prompt = "You are a knowledgeable assistant who provides thorough, well-explained responses suited for an adult. Your tone should be professional, but friendly, and you should use complete sentences with appropriate vocabulary. Avoid being overly casual, and aim to deliver clear, informative responses that assume the reader has a general level of education."
+
+
+        return QueryIntentHandler.query_openai(client, system_prompt, user_prompt=user_query)
+
+    @staticmethod
+    def query_openai(client: OpenAI, system_prompt: str, user_prompt: str, model: str = "gpt-4o-mini") -> str:
+        """
+        Queries the OpenAI API with a given prompt and model.
+        
+        Args:
+            prompt (str): The input prompt to send to the model.
+            model (str): The model to use for the query (default: gpt-3.5-turbo).
+            
+        Returns:
+            str: The response from the model.
+        """
+        completion = client.chat.completions.create(
+            model=model,
+            max_tokens=250,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": user_prompt
+                }
+            ]
+        )
+
+        return completion.choices[0].message.content
+    
+    @staticmethod
+    def get_secret_from_extension() -> str:
+        """
+        Retrieve a secret string from the AWS Secrets Manager extension.
+
+        This method uses the local AWS Secrets Manager extension to fetch a secret. 
+        It requires an active AWS session token available in the environment variables.
+
+        Returns:
+            str: The secret string retrieved from the AWS Secrets Manager.
+
+        Raises:
+            Exception: If the AWS_SESSION_TOKEN is not found in the environment variables.
+            Exception: If the secret cannot be retrieved successfully, or the HTTP response 
+                       from the AWS Secrets Manager extension is not 200.
+
+        Notes:
+            - The secret name is hardcoded as "prod/openai/tokens".
+            - The method assumes the AWS Secrets Manager extension is running locally 
+              on port 2773.
+
+        """
+        secret_name = "prod/openai/tokens"
+        endpoint = f"http://localhost:2773/secretsmanager/get?secretId={secret_name}"
+
+        # Get the AWS session token from environment variables
+        session_token = os.getenv('AWS_SESSION_TOKEN')
+
+        if not session_token:
+            raise Exception("AWS_SESSION_TOKEN not found in environment variables")
+
+        # Set the necessary headers, including the session token
+        headers = {
+            "X-Aws-Parameters-Secrets-Token": session_token
+        }
+
+        req = urllib.request.Request(endpoint, headers=headers)
+        with urllib.request.urlopen(req) as response:
+            if response.status == 200:
+                secret = json.loads(response.read().decode())
+                return secret['SecretString']
+            else:
+                raise Exception(f"Failed to retrieve secret. Status: {response.status}")
 
     def handle(self, handler_input):
         user_query = handler_input.request_envelope.request.intent.slots["query"].value
@@ -98,7 +153,8 @@ class QueryIntentHandler(AbstractRequestHandler):
           raise Exception("I do not know the user query!")
 
         # Proceed with the query logic
-        speak_output = f"Here's the answer to your question, {user_name}: {self.handle_user_query(user_query)}"
+        gpt_response = self.handle_user_query(user_name, user_query)
+        speak_output = f"Here's the answer to your question, {user_name}: {gpt_response}"
         return (
             handler_input.response_builder
                 .speak(speak_output)
