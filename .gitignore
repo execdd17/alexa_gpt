@@ -2,4 +2,6 @@ ask-resources.json
 .ask
 .vscode
 lambda/node_modules
-skill.zip
+package/
+python
+*.zip

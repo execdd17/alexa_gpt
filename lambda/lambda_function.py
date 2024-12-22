@@ -21,27 +21,27 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class NameIntentHandler(AbstractRequestHandler):
+class AgeIntentHandler(AbstractRequestHandler):
     def can_handle(self, handler_input):
         # Check if this is a NameIntent request
-        return is_intent_name("NameIntent")(handler_input)
-        # return ask_utils.is_request_type("NameIntent")(handler_input)
+        return is_intent_name("AgeIntent")(handler_input)
 
     def handle(self, handler_input):
         # Get the user's name from the slot
-        user_name = handler_input.request_envelope.request.intent.slots["name"].value
+        age = handler_input.request_envelope.request.intent.slots["age"].value
         
         # Store the user's name in session attributes
         session_attributes = handler_input.attributes_manager.session_attributes
-        session_attributes['userName'] = user_name
+        session_attributes['age'] = age
 
-        logger.debug(f"Inside NameIntentHandler with userName: {user_name} from the session")
+        logger.debug(f"Inside AgeIntentHandler with age: {age} from the session")
         
-        speak_output = f"Hello, {user_name}. What do you want to know?"
+        age_echo = f"You are {age} years old, got it. "
+        query_echo = f"What do you want to know? Say, 'search for' and then your question."
         return (
             handler_input.response_builder
-                .speak(speak_output)
-                .ask(speak_output)
+                .speak(age_echo + query_echo)
+                .ask(query_echo)
                 .response
         )
 
@@ -50,48 +50,50 @@ class QueryIntentHandler(AbstractRequestHandler):
     def can_handle(self, handler_input):
         return is_intent_name("QueryIntent")(handler_input)
     
-    def handle_user_query(self, user, user_query):
+    def handle_user_query(self, age: int, user_query: str, session_attributes):
         secret = QueryIntentHandler.get_secret_from_extension()
         api_key = json.loads(secret)['api-key']
         logger.info(f"api_key length: {len(api_key)}")
         
         client = OpenAI(api_key=api_key)
 
-        if user.lower() == 'cadence' or user.lower() == 'natalie' :
-            system_prompt = "You are a friendly assistant who explains things in a simple, fun, and easy-to-understand way. Use clear language and short sentences, and focus on keeping the conversation engaging. Avoid using difficult words and make sure your explanations are interesting by adding examples or fun comparisons. Imagine explaining things to someone who loves to learn but still needs things broken down clearly and simply."
-        elif user.lower() == 'layla':
+        if age < 10:
+            system_prompt = "You are a friendly assistant who explains things in a simple, fun, and easy-to-understand way. Use clear language and short sentences, and focus on keeping the conversation engaging. Avoid using difficult words and make sure your explanations are interesting by adding examples or fun comparisons. Imagine explaining things to someone who loves to learn but still needs things broken down clearly and simply. Keep your answers concise, limited to one or two short paragraphs, as kids have short attention spans."
+        elif age <= 15:
             system_prompt = "You are an assistant who explains things in a fun and informative way for a curious 10-12-year-old. Use language that’s a little more advanced than for younger children, but still make sure the information is easy to follow. Provide some more details and examples to help them understand complex ideas, and try to make the explanations interesting and relatable by connecting them to things they might already know, like hobbies, games, or school subjects."
         else:
             system_prompt = "You are a knowledgeable assistant who provides thorough, well-explained responses suited for an adult. Your tone should be professional, but friendly, and you should use complete sentences with appropriate vocabulary. Avoid being overly casual, and aim to deliver clear, informative responses that assume the reader has a general level of education."
 
-
-        return QueryIntentHandler.query_openai(client, system_prompt, user_prompt=user_query)
+        return QueryIntentHandler.query_openai(client, system_prompt, session_attributes, user_prompt=user_query)
 
     @staticmethod
-    def query_openai(client: OpenAI, system_prompt: str, user_prompt: str, model: str = "gpt-4o-mini") -> str:
-        """
-        Queries the OpenAI API with a given prompt and model.
-        
-        Args:
-            prompt (str): The input prompt to send to the model.
-            model (str): The model to use for the query (default: gpt-3.5-turbo).
-            
-        Returns:
-            str: The response from the model.
-        """
+    def query_openai(client: OpenAI, system_prompt: str, session_attributes, 
+                     user_prompt: str, model: str = "gpt-4o-mini") -> str:
+        logger.info(f"Using system prompt: {system_prompt}")
+        logger.info(f"Using user prompt: {user_prompt}")
+
+        if session_attributes.get("convo"):
+            session_attributes["convo"].append({ "role": "user", "content": user_prompt })
+        else:
+            session_attributes["convo"] = [
+                { "role": "system", "content": system_prompt },
+                { "role": "user", "content": user_prompt }
+            ]
+
         completion = client.chat.completions.create(
             model=model,
             max_tokens=250,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {
-                    "role": "user",
-                    "content": user_prompt
-                }
-            ]
+            messages=session_attributes["convo"]
         )
 
-        return completion.choices[0].message.content
+        response = completion.choices[0].message.content
+
+        session_attributes["convo"].append(
+            {"role": "assistant", "content": response}
+        )
+
+        logger.info(f"Conversation history: {session_attributes['convo']}")
+        return response
     
     @staticmethod
     def get_secret_from_extension() -> str:
@@ -141,23 +143,25 @@ class QueryIntentHandler(AbstractRequestHandler):
         user_query = handler_input.request_envelope.request.intent.slots["query"].value
 
         session_attributes = handler_input.attributes_manager.session_attributes
-        user_name = session_attributes.get("userName")
+        age = session_attributes.get("age")
 
         logger.debug(f"user_query is {user_query}")
-        logger.debug(f"user_name is {user_name}")
+        logger.debug(f"age is {age}")
 
-        if not user_name:
-          raise Exception("I do not know the user name!")
+        if not age:
+          raise Exception("I do not know the age!")
+        
+        age = int(age)
         
         if not user_query:
           raise Exception("I do not know the user query!")
 
         # Proceed with the query logic
-        gpt_response = self.handle_user_query(user_name, user_query)
-        speak_output = f"Here's the answer to your question, {user_name}: {gpt_response}"
+        gpt_response = self.handle_user_query(age, user_query, session_attributes)
         return (
             handler_input.response_builder
-                .speak(speak_output)
+                .speak(gpt_response)
+                .ask("If you want to keep talking, then say 'search for' first.")
                 .response
         )
 
@@ -171,7 +175,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "What is your name?" 
+        speak_output = "How old are you?" 
 
         return (
             handler_input.response_builder
@@ -319,7 +323,7 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
 sb = SkillBuilder()
 
 sb.add_request_handler(LaunchRequestHandler())
-sb.add_request_handler(NameIntentHandler())
+sb.add_request_handler(AgeIntentHandler())
 sb.add_request_handler(QueryIntentHandler())
 # sb.add_request_handler(HelloWorldIntentHandler())
 sb.add_request_handler(ZigZagIntentHandler())
@@ -331,41 +335,3 @@ sb.add_request_handler(IntentReflectorHandler()) # make sure IntentReflectorHand
 sb.add_exception_handler(CatchAllExceptionHandler())
 
 lambda_handler = sb.lambda_handler()
-
-
-# def lambda_handler(event, context):
-#     # secret = get_secret()
-#     secret = get_secret_from_extension()
-#     return json.dumps({"secret": secret})
-
-# def lambda_handler(event, context):
-#     secret_name = "prod/openai/tokens-LTn7P9"
-#     endpoint = f"http://localhost:2773/secretsmanager/get?secretId={secret_name}"
-#     headers = {"X-Aws-Parameters-Secrets-Token": os.environ.get("AWS_SESSION_TOKEN", "N/A")}
-
-#     # Logging the environment variable to ensure it's set
-#     print(f"Session Token: {headers['X-Aws-Parameters-Secrets-Token']}")
-
-#     req = urllib.request.Request(endpoint, headers=headers)
-    
-#     try:
-#         with urllib.request.urlopen(req) as response:
-#             if response.status == 200:
-#                 secret = json.loads(response.read().decode())
-#                 print(f"Secret retrieved: {secret['SecretString']}")
-#                 return {
-#                     "statusCode": 200,
-#                     "body": f"Secret retrieved: {secret['SecretString']}"
-#                 }
-#             else:
-#                 print(f"Failed to retrieve secret. Status: {response.status}")
-#                 return {
-#                     "statusCode": response.status,
-#                     "body": f"Failed to retrieve secret. Status: {response.status}"
-#                 }
-#     except urllib.error.URLError as e:
-#         print(f"Error retrieving secret: {e.reason}")
-#         return {
-#             "statusCode": 500,
-#             "body": f"Error retrieving secret: {e.reason}"
-#         }

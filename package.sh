@@ -15,7 +15,7 @@ cd .venv/Lib/site-packages/ || { echo "Failed to cd into .venv/Lib/site-packages
 
 # Step 2: Zip the contents of the directory into skill.zip
 echo "Zipping the contents of site-packages into skill.zip..."
-zip -r ../../../skill.zip . > zip_output.log 2>&1 || { echo "Failed to zip site-packages. See zip_output.log for details."; exit 1; }
+zip -r ../../../skill.zip . || { echo "Failed to zip site-packages. See zip_output.log for details."; exit 1; }
 
 # Step 3: Change back to the root directory
 echo "Changing back to the root directory..."

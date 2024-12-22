@@ -1,2 +1,2 @@
-ask-sdk-core==1.19.0
-openai
+# ask-sdk-core==1.19.0
+# openai
