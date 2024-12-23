@@ -1,0 +1,55 @@
+{
+  "manifest": {
+    "apis": {
+      "custom": {
+        "endpoint": {
+          "uri": "arn:aws:lambda:us-east-1:867645784531:function:testFunction:live"
+        },
+        "interfaces": [],
+        "locales": {},
+        "regions": {
+          "NA": {
+            "endpoint": {
+              "uri": "arn:aws:lambda:us-east-1:867645784531:function:testFunction:live"
+            }
+          }
+        }
+      }
+    },
+    "manifestVersion": "1.0",
+    "privacyAndCompliance": {
+      "allowsPurchases": false,
+      "containsAds": false,
+      "isChildDirected": true,
+      "isExportCompliant": true,
+      "locales": {
+        "en-US": {}
+      },
+      "shoppingKit": {
+        "isAmazonAssociatesOnAlexaEnabled": false,
+        "isShoppingActionsEnabled": false
+      },
+      "usesPersonalInfo": false
+    },
+    "publishingInformation": {
+      "automaticDistribution": {
+        "isActive": false
+      },
+      "category": "EDUCATION_AND_REFERENCE",
+      "distributionCountries": [],
+      "isAvailableWorldwide": true,
+      "locales": {
+        "en-US": {
+          "description": "1. Say \"Open zig zag\" to open the skill\n2. Say your name\n3. Start your search with \"search for\" and then your actual search. For example, \"search for Why does it rain\"\n4. If you get stuck, say \"exit\"",
+          "examplePhrases": [
+            "Alexa open zig zag"
+          ],
+          "keywords": [],
+          "name": "Kid Friendly ChatGPT",
+          "summary": "A ChatGPT wrapper that customizes the experience based on age."
+        }
+      },
+      "testingInstructions": "{\"ask_dist_username\":\"N/A\",\"ask_dist_password\":\"1234\",\"ask_dist_testing_instructions\":\"Sample Testing Instructions.\"}"
+    }
+  }
+}

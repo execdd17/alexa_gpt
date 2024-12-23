@@ -1,168 +1,171 @@
 {
   "interactionModel": {
-      "languageModel": {
-          "invocationName": "zig zag",
-          "intents": [
-              {
-                  "name": "AMAZON.CancelIntent",
-                  "samples": []
-              },
-              {
-                  "name": "AMAZON.HelpIntent",
-                  "samples": []
-              },
-              {
-                  "name": "AMAZON.StopIntent",
-                  "samples": []
-              },
-              {
-                  "name": "AMAZON.FallbackIntent",
-                  "samples": []
-              },
-              {
-                  "name": "AMAZON.NavigateHomeIntent",
-                  "samples": []
-              },
-              {
-                  "name": "ZigZagIntent",
-                  "slots": [],
-                  "samples": [
-                      "zig zag",
-                      "zigzag"
-                  ]
-              },
-              {
-                  "name": "NameIntent",
-                  "slots": [
-                      {
-                          "name": "name",
-                          "type": "FamilyNames",
-                          "samples": [
-                              "Layla",
-                              "Natalie",
-                              "cadence"
-                          ]
-                      }
-                  ],
-                  "samples": [
-                      "{name}",
-                      "I am {name}",
-                      "My name is {name}"
-                  ]
-              },
-              {
-                  "name": "QueryIntent",
-                  "slots": [
-                      {
-                          "name": "query",
-                          "type": "AMAZON.SearchQuery",
-                          "samples": [
-                              "Why does it rain",
-                              "Where is Moscow",
-                              "How do I draw a simple house",
-                              "Tell me about motorcycles",
-                              "Tell me about Dachshunds",
-                              "What is twentyfive times seven",
-                              "What is the capital of France"
-                          ]
-                      }
-                  ],
-                  "samples": [
-                      "found out {query}",
-                      "search for {query}"
-                  ]
+    "dialog": {
+      "intents": [
+        {
+          "slots": [
+            {
+              "name": "query",
+              "elicitationRequired": true,
+              "type": "AMAZON.SearchQuery",
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.31417954686.280619096652"
               }
+            }
           ],
-          "types": [
-              {
-                  "name": "FamilyNames",
-                  "values": [
-                      {
-                          "name": {
-                              "value": "daddy"
-                          }
-                      },
-                      {
-                          "name": {
-                              "value": "mommy"
-                          }
-                      },
-                      {
-                          "name": {
-                              "value": "cadence"
-                          }
-                      },
-                      {
-                          "name": {
-                              "value": "natalie"
-                          }
-                      },
-                      {
-                          "name": {
-                              "value": "layla"
-                          }
-                      }
-                  ]
+          "name": "QueryIntent",
+          "confirmationRequired": false,
+          "prompts": {}
+        },
+        {
+          "slots": [
+            {
+              "name": "age",
+              "elicitationRequired": true,
+              "type": "AMAZON.NUMBER",
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.527574664135.1686548527908"
               }
+            }
+          ],
+          "name": "AgeIntent",
+          "delegationStrategy": "ALWAYS",
+          "confirmationRequired": false,
+          "prompts": {}
+        }
+      ],
+      "delegationStrategy": "ALWAYS"
+    },
+    "languageModel": {
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "slots": [
+            {
+              "name": "query",
+              "type": "AMAZON.SearchQuery",
+              "samples": [
+                "Why does it rain",
+                "Where is Moscow",
+                "How do I draw a simple house",
+                "Tell me about motorcycles",
+                "Tell me about Dachshunds",
+                "What is twentyfive times seven",
+                "What is the capital of France"
+              ]
+            }
+          ],
+          "name": "QueryIntent",
+          "samples": [
+            "found out {query}",
+            "search for {query}"
           ]
-      },
-      "dialog": {
-          "intents": [
-              {
-                  "name": "NameIntent",
-                  "delegationStrategy": "ALWAYS",
-                  "confirmationRequired": false,
-                  "prompts": {},
-                  "slots": [
-                      {
-                          "name": "name",
-                          "type": "FamilyNames",
-                          "confirmationRequired": false,
-                          "elicitationRequired": true,
-                          "prompts": {
-                              "elicitation": "Elicit.Slot.349005624568.911395169618"
-                          }
-                      }
-                  ]
-              },
-              {
-                  "name": "QueryIntent",
-                  "confirmationRequired": false,
-                  "prompts": {},
-                  "slots": [
-                      {
-                          "name": "query",
-                          "type": "AMAZON.SearchQuery",
-                          "confirmationRequired": false,
-                          "elicitationRequired": true,
-                          "prompts": {
-                              "elicitation": "Elicit.Slot.31417954686.280619096652"
-                          }
-                      }
-                  ]
-              }
+        },
+        {
+          "slots": [
+            {
+              "name": "age",
+              "type": "AMAZON.NUMBER",
+              "samples": [
+                "thirty-three",
+                "forty",
+                "twelve",
+                "ten",
+                "eight"
+              ]
+            }
           ],
-          "delegationStrategy": "ALWAYS"
-      },
-      "prompts": [
+          "name": "AgeIntent",
+          "samples": [
+            "{age} years old",
+            "I am {age} years old",
+            "{age}"
+          ]
+        }
+      ],
+      "types": [
+        {
+          "values": [
+            {
+              "name": {
+                "value": "daddy"
+              }
+            },
+            {
+              "name": {
+                "value": "mommy"
+              }
+            },
+            {
+              "name": {
+                "value": "cadence"
+              }
+            },
+            {
+              "name": {
+                "value": "natalie"
+              }
+            },
+            {
+              "name": {
+                "value": "layla"
+              }
+            }
+          ],
+          "name": "FamilyNames"
+        }
+      ],
+      "invocationName": "zig zag"
+    },
+    "prompts": [
+      {
+        "variations": [
           {
-              "id": "Elicit.Slot.349005624568.911395169618",
-              "variations": [
-                  {
-                      "type": "PlainText",
-                      "value": "What is your name?"
-                  }
-              ]
-          },
-          {
-              "id": "Elicit.Slot.31417954686.280619096652",
-              "variations": [
-                  {
-                      "type": "PlainText",
-                      "value": "What do you want to know "
-                  }
-              ]
+            "type": "PlainText",
+            "value": "What is your name?"
           }
-      ]
+        ],
+        "id": "Elicit.Slot.349005624568.911395169618"
+      },
+      {
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "What do you want to know "
+          }
+        ],
+        "id": "Elicit.Slot.31417954686.280619096652"
+      },
+      {
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "What is your age?"
+          }
+        ],
+        "id": "Elicit.Slot.527574664135.1686548527908"
+      }
+    ]
   }
 }

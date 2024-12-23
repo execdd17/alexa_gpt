@@ -58,9 +58,9 @@ class QueryIntentHandler(AbstractRequestHandler):
         client = OpenAI(api_key=api_key)
 
         if age < 10:
-            system_prompt = "You are a friendly assistant who explains things in a simple, fun, and easy-to-understand way. Use clear language and short sentences, and focus on keeping the conversation engaging. Avoid using difficult words and make sure your explanations are interesting by adding examples or fun comparisons. Imagine explaining things to someone who loves to learn but still needs things broken down clearly and simply. Keep your answers concise, limited to one or two short paragraphs, as kids have short attention spans."
-        elif age <= 15:
-            system_prompt = "You are an assistant who explains things in a fun and informative way for a curious 10-12-year-old. Use language that’s a little more advanced than for younger children, but still make sure the information is easy to follow. Provide some more details and examples to help them understand complex ideas, and try to make the explanations interesting and relatable by connecting them to things they might already know, like hobbies, games, or school subjects."
+            system_prompt = "You are a friendly assistant, for a child less than 10 years, old who explains things in a simple, fun, and easy-to-understand way. Use clear language, short sentences, and focus on keeping the conversation engaging. Avoid using difficult words and make sure your explanations are interesting by adding examples or fun comparisons. Imagine explaining things to someone who loves to learn but still needs things broken down clearly and simply. Keep your answers concise, limited to one paragraph, as kids have short attention spans."
+        elif age >= 10 and age < 13:
+            system_prompt = "You are an assistant who explains things in a fun and interactive way for a curious 10-12-year-old. Use language that’s a little more advanced than for younger children, but still make sure the information is easy to follow. Provide some more details and examples to help them understand complex ideas, and try to make the explanations interesting and relatable by connecting them to things they might already know, like hobbies, games, or school subjects. Keep your answers to a single paragraph."
         else:
             system_prompt = "You are a knowledgeable assistant who provides thorough, well-explained responses suited for an adult. Your tone should be professional, but friendly, and you should use complete sentences with appropriate vocabulary. Avoid being overly casual, and aim to deliver clear, informative responses that assume the reader has a general level of education."
 
@@ -175,7 +175,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "How old are you?" 
+        speak_output = "Hello. How old are you?" 
 
         return (
             handler_input.response_builder
@@ -185,41 +185,6 @@ class LaunchRequestHandler(AbstractRequestHandler):
         )
     
 
-class ZigZagIntentHandler(AbstractRequestHandler):
-    def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
-        return ask_utils.is_intent_name("ZigZagIntent")(handler_input)
-
-    def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
-        speak_output = "Who is the dog that likes to play? Zig Zag, Zig Zag!"
-
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
-    
-
-
-# class HelloWorldIntentHandler(AbstractRequestHandler):
-#     """Handler for Hello World Intent."""
-#     def can_handle(self, handler_input):
-#         # type: (HandlerInput) -> bool
-#         return ask_utils.is_intent_name("HelloWorldIntent")(handler_input)
-
-#     def handle(self, handler_input):
-#         # type: (HandlerInput) -> Response
-#         speak_output = "Hello, dude!"
-
-#         return (
-#             handler_input.response_builder
-#                 .speak(speak_output)
-#                 # .ask("add a reprompt if you want to keep the session open for the user to respond")
-#                 .response
-#         )
-
-
 class HelpIntentHandler(AbstractRequestHandler):
     """Handler for Help Intent."""
     def can_handle(self, handler_input):
@@ -228,7 +193,7 @@ class HelpIntentHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "You can say hello to me! How can I help?"
+        speak_output = "This skill forwards messages to ChatGPT. It is very important to start by saying 'search for' and then your message."
 
         return (
             handler_input.response_builder
@@ -247,11 +212,11 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "Goodbye, dude!"
 
         return (
             handler_input.response_builder
-                .speak(speak_output)
+                .speak("Goodbye")
+                .set_should_end_session(True)
                 .response
         )
 
@@ -325,8 +290,6 @@ sb = SkillBuilder()
 sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(AgeIntentHandler())
 sb.add_request_handler(QueryIntentHandler())
-# sb.add_request_handler(HelloWorldIntentHandler())
-sb.add_request_handler(ZigZagIntentHandler())
 sb.add_request_handler(HelpIntentHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
 sb.add_request_handler(SessionEndedRequestHandler())
