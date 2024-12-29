@@ -9,7 +9,9 @@ import json
 import ask_sdk_core.utils as ask_utils
 from openai import OpenAI
 
-
+from ask_sdk_model.dialog.delegate_directive import DelegateDirective
+from ask_sdk_model.intent import Intent
+from ask_sdk_model.slot import Slot
 from ask_sdk_core.skill_builder import SkillBuilder
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
@@ -19,6 +21,21 @@ from ask_sdk_model import Response
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+import re
+
+def get_last_sentence_and_check_question(response: str):
+    # Split the response into sentences using a regex
+    sentences = re.split(r"(?<=[.!?]) +", response.strip())
+    
+    # Get the last sentence
+    last_sentence = sentences[-1] if sentences else ""
+
+    # Check if the last sentence contains a question mark
+    if "?" in last_sentence:
+        return last_sentence
+    else:
+        return None
 
 
 class AgeIntentHandler(AbstractRequestHandler):
@@ -36,14 +53,15 @@ class AgeIntentHandler(AbstractRequestHandler):
 
         logger.debug(f"Inside AgeIntentHandler with age: {age} from the session")
         
-        age_echo = f"You are {age} years old, got it. "
-        query_echo = f"What do you want to know? Say, 'search for' and then your question."
-        return (
-            handler_input.response_builder
-                .speak(age_echo + query_echo)
-                .ask(query_echo)
-                .response
-        )
+        delegate_intent = Intent(
+                name="QueryIntent",
+                slots={
+                    "query": Slot(name="query", value="")  # Use an empty query slot initially
+                }
+            )
+        return handler_input.response_builder.add_directive(
+            DelegateDirective(updated_intent=delegate_intent)
+        ).response
 
 
 class QueryIntentHandler(AbstractRequestHandler):
@@ -58,13 +76,18 @@ class QueryIntentHandler(AbstractRequestHandler):
         client = OpenAI(api_key=api_key)
 
         if age < 10:
-            system_prompt = "You are a friendly assistant, for a child less than 10 years, old who explains things in a simple, fun, and easy-to-understand way. Use clear language, short sentences, and focus on keeping the conversation engaging. Avoid using difficult words and make sure your explanations are interesting by adding examples or fun comparisons. Imagine explaining things to someone who loves to learn but still needs things broken down clearly and simply. Keep your answers concise, limited to one paragraph, as kids have short attention spans."
+            system_prompt = "You are a friendly assistant, for a child less than 10 years, old who explains things in a simple, fun, and easy-to-understand way. Use clear language, short sentences, and focus on keeping the conversation engaging. Avoid using difficult words and make sure your explanations are interesting by adding examples or fun comparisons. Imagine explaining things to someone who loves to learn but still needs things broken down clearly and simply. Keep your answers concise, limited to one paragraph, as kids have short attention spans. Only return text. Do not use emojis."
         elif age >= 10 and age < 13:
-            system_prompt = "You are an assistant who explains things in a fun and interactive way for a curious 10-12-year-old. Use language that’s a little more advanced than for younger children, but still make sure the information is easy to follow. Provide some more details and examples to help them understand complex ideas, and try to make the explanations interesting and relatable by connecting them to things they might already know, like hobbies, games, or school subjects. Keep your answers to a single paragraph."
+            system_prompt = "You are an assistant who explains things in a fun and interactive way for a curious 10-12-year-old. Use language that’s a little more advanced than for younger children, but still make sure the information is easy to follow. Provide some more details and examples to help them understand complex ideas, and try to make the explanations interesting and relatable by connecting them to things they might already know, like hobbies, games, or school subjects. Keep your answers to a single paragraph. Only return text. Do not use emojis."
         else:
-            system_prompt = "You are a knowledgeable assistant who provides thorough, well-explained responses suited for an adult. Your tone should be professional, but friendly, and you should use complete sentences with appropriate vocabulary. Avoid being overly casual, and aim to deliver clear, informative responses that assume the reader has a general level of education."
+            system_prompt = "You are a highly interactive and conversational assistant designed for Alexa users. Provide concise, clear, and engaging answers that encourage the user to ask follow-up questions or steer the conversation. Avoid long explanations unless explicitly asked, and always prioritize brevity and responsiveness."
 
-        return QueryIntentHandler.query_openai(client, system_prompt, session_attributes, user_prompt=user_query)
+        return QueryIntentHandler.query_openai(
+            client, 
+            system_prompt, 
+            session_attributes, 
+            user_prompt=user_query,
+            model="gpt-4o")
 
     @staticmethod
     def query_openai(client: OpenAI, system_prompt: str, session_attributes, 
@@ -156,12 +179,20 @@ class QueryIntentHandler(AbstractRequestHandler):
         if not user_query:
           raise Exception("I do not know the user query!")
 
-        # Proceed with the query logic
         gpt_response = self.handle_user_query(age, user_query, session_attributes)
+
+        # Get the last sentence and check if it's a question
+        last_question = get_last_sentence_and_check_question(gpt_response)
+
+        # Use the question as the reprompt if available, otherwise use a default static question
+        reprompt = last_question if last_question else "What else would you like to know?"
+        sigh = "\n\nPlease say 'respond with' and then talk, or say 'exit' if you're done."
+        session_attributes["query_mode"] = True
+
         return (
             handler_input.response_builder
-                .speak(gpt_response)
-                .ask("If you want to keep talking, then say 'search for' first.")
+                .speak(gpt_response + " " + sigh)
+                .ask(reprompt + " " + sigh)
                 .response
         )
 
@@ -247,8 +278,23 @@ class IntentReflectorHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
+
+        session_attributes = handler_input.attributes_manager.session_attributes
         intent_name = ask_utils.get_intent_name(handler_input)
         speak_output = "You just triggered " + intent_name + "."
+
+        if session_attributes.get("query_mode"):
+            # Create a delegate directive to re-route the request
+            delegate_intent = Intent(
+                name="QueryIntent",
+                slots={
+                    "query": Slot(name="query", value="")  # Use an empty query slot initially
+                }
+            )
+            return handler_input.response_builder.add_directive(
+                DelegateDirective(updated_intent=delegate_intent)
+            ).response
+
 
         return (
             handler_input.response_builder
